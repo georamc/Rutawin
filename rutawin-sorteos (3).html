@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RutaWin — Sorteos de Transporte</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- QRCode.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B3E;--navy-mid:#1A2B56;--navy-light:#233470;
+  --yellow:#F5C518;--yellow-soft:#FDD84E;
+  --white:#F0EEE9;--gray:#3A3F5C;--gray-light:#8892B0;
+  --success:#22C55E;--error:#EF4444;--info:#3B82F6;--warn:#F59E0B;
+}
+body{font-family:'Inter',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 48%,rgba(245,197,24,.04) 48%,rgba(245,197,24,.04) 52%);pointer-events:none;z-index:0}
+
+/* VIEWS */
+.view{display:none;position:relative;z-index:1}
+.view.active{display:block}
+
+/* ── REGISTER ── */
+.register-wrap{min-height:100vh;display:grid;place-items:center;padding:2rem 1rem}
+.register-card{background:var(--navy-mid);border:1px solid rgba(245,197,24,.2);border-radius:20px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.ticket-header{background:var(--yellow);padding:1.5rem 2rem;position:relative;overflow:hidden}
+.ticket-header::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:20px;background:var(--navy-mid);mask:radial-gradient(circle at 10px -1px,transparent 10px,black 10px) repeat-x;-webkit-mask:radial-gradient(circle at 10px -1px,transparent 10px,black 10px) repeat-x}
+.ticket-logo{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem}
+.ticket-icon{width:40px;height:40px;background:var(--navy);border-radius:10px;display:grid;place-items:center;font-size:1.25rem}
+.ticket-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem;color:var(--navy);letter-spacing:-.5px}
+.qr-badge{display:flex;align-items:center;gap:.5rem;background:rgba(13,27,62,.15);border-radius:8px;padding:.4rem .75rem;width:fit-content;margin-top:1rem}
+.qr-dot{width:8px;height:8px;background:var(--navy);border-radius:50%;animation:pdot 1.5s infinite}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.qr-badge span{font-size:.75rem;color:var(--navy);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.ticket-body{padding:2rem 2rem 1.5rem}
+.form-title{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:700;margin-bottom:.3rem}
+.form-sub{font-size:.85rem;color:var(--gray-light);margin-bottom:1.5rem;line-height:1.5}
+.sorteo-active-badge{display:flex;align-items:center;gap:.5rem;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.2);border-radius:8px;padding:.6rem .9rem;margin-bottom:1.5rem}
+.sorteo-active-badge span{font-size:.82rem;color:var(--yellow);font-weight:500}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-light);margin-bottom:.4rem}
+.field input,.field select{width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;transition:border-color .2s,background .2s;outline:none}
+.field input::placeholder{color:var(--gray-light)}
+.field input:focus,.field select:focus{border-color:var(--yellow);background:rgba(245,197,24,.05)}
+.field input.err,.field select.err{border-color:var(--error)}
+.ferr{font-size:.72rem;color:var(--error);margin-top:.3rem;display:none}
+.field input.err~.ferr,.field select.err~.ferr{display:block}
+.field select option{background:var(--navy-mid)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.terms{display:flex;align-items:flex-start;gap:.6rem;margin:1.25rem 0 1.5rem}
+.terms input[type=checkbox]{width:18px;height:18px;accent-color:var(--yellow);flex-shrink:0;margin-top:2px}
+.terms label{font-size:.8rem;color:var(--gray-light);line-height:1.5;cursor:pointer}
+.terms a{color:var(--yellow);text-decoration:none}
+.btn-main{width:100%;background:var(--yellow);color:var(--navy);border:none;border-radius:12px;padding:.9rem;font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-main:hover{background:var(--yellow-soft);transform:translateY(-1px)}
+.btn-main:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.ticket-footer{border-top:1px dashed rgba(255,255,255,.1);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+.ticket-footer span{font-size:.72rem;color:var(--gray-light)}
+.sorteo-badge{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.3);border-radius:6px;padding:.25rem .6rem;font-size:.72rem;color:var(--yellow);font-weight:600}
+
+/* SECURITY OVERLAY */
+.sec-overlay{position:fixed;inset:0;background:rgba(13,27,62,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2147483647;text-align:center;padding:2rem;gap:1rem}
+.sec-overlay .ico{font-size:3rem}
+.sec-overlay h2{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--error)}
+.sec-overlay p{color:var(--gray-light);font-size:.9rem;max-width:320px;line-height:1.6}
+
+/* ── SUCCESS ── */
+.success-wrap{min-height:100vh;display:grid;place-items:center;padding:2rem 1rem}
+.success-card{background:var(--navy-mid);border:1px solid rgba(34,197,94,.3);border-radius:20px;width:100%;max-width:420px;padding:3rem 2rem;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 40px rgba(34,197,94,.08)}
+.success-icon{width:80px;height:80px;background:rgba(34,197,94,.1);border:2px solid var(--success);border-radius:50%;display:grid;place-items:center;font-size:2rem;margin:0 auto 1.5rem;animation:popin .4s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popin{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.success-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:.5rem}
+.success-sub{color:var(--gray-light);font-size:.9rem;line-height:1.6;margin-bottom:2rem}
+.ticket-number{background:rgba(245,197,24,.08);border:1.5px dashed rgba(245,197,24,.4);border-radius:12px;padding:1.25rem;margin-bottom:2rem}
+.ticket-number p{font-size:.72rem;color:var(--gray-light);text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem}
+.ticket-number .code{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--yellow);letter-spacing:4px}
+.btn-sec{display:inline-block;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:.75rem 2rem;color:var(--white);font-family:'Inter',sans-serif;font-weight:500;font-size:.9rem;cursor:pointer;background:transparent;transition:border-color .2s,background .2s;width:100%}
+.btn-sec:hover{border-color:var(--yellow);background:rgba(245,197,24,.05)}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:2rem 1rem}
+.login-card{background:var(--navy-mid);border:1px solid rgba(255,255,255,.07);border-radius:20px;width:100%;max-width:380px;padding:2.5rem 2rem}
+.login-logo{text-align:center;margin-bottom:2rem}
+.login-logo .lico{font-size:2.5rem;margin-bottom:.5rem}
+.login-logo h2{font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem}
+.login-logo h2 span{color:var(--yellow)}
+.login-logo p{font-size:.82rem;color:var(--gray-light);margin-top:.25rem}
+.link-btn{background:none;border:none;color:var(--yellow);font-size:.82rem;cursor:pointer;font-family:'Inter',sans-serif}
+.link-btn:hover{text-decoration:underline}
+
+/* ── ADMIN ── */
+.admin-wrap{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+.admin-nav{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 0;margin-bottom:2rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.admin-brand{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800}
+.admin-brand span{color:var(--yellow)}
+.nav-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.btn-sm{padding:.5rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-sm.out{background:transparent;border:1.5px solid rgba(255,255,255,.15);color:var(--white)}
+.btn-sm.out:hover{border-color:var(--yellow);color:var(--yellow)}
+.btn-sm.pri{background:var(--yellow);color:var(--navy);font-family:'Syne',sans-serif}
+.btn-sm.pri:hover{background:var(--yellow-soft)}
+.btn-sm.red{background:rgba(239,68,68,.15);border:1.5px solid rgba(239,68,68,.3);color:var(--error)}
+.btn-sm.red:hover{background:rgba(239,68,68,.25)}
+.btn-sm.grn{background:rgba(34,197,94,.15);border:1.5px solid rgba(34,197,94,.3);color:var(--success)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2.5rem}
+.stat-card{background:var(--navy-mid);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.25rem 1.5rem;transition:border-color .2s;cursor:default}
+.stat-card:hover{border-color:rgba(245,197,24,.25)}
+.stat-label{font-size:.72rem;color:var(--gray-light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.4rem}
+.stat-val{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800}
+.stat-val.y{color:var(--yellow)}.stat-val.g{color:var(--success)}.stat-val.b{color:var(--info)}
+.stat-delta{font-size:.72rem;color:var(--gray-light);margin-top:.2rem}
+.admin-grid{display:grid;grid-template-columns:1fr 360px;gap:1.5rem}
+@media(max-width:900px){.admin-grid{grid-template-columns:1fr}}
+.panel{background:var(--navy-mid);border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden}
+.panel-head{padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.panel-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+.panel-body{padding:1.5rem}
+.tabs{display:flex;gap:.25rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab{padding:.5rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--gray-light);transition:all .2s}
+.tab.active{background:rgba(245,197,24,.12);color:var(--yellow)}
+.tab:hover:not(.active){background:rgba(255,255,255,.05);color:var(--white)}
+.data-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.data-table th{text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--gray-light);padding:.6rem 1rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.data-table td{padding:.75rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:5px;font-size:.7rem;font-weight:600}
+.badge.act{background:rgba(34,197,94,.15);color:var(--success)}
+.badge.pend{background:rgba(245,197,24,.15);color:var(--yellow)}
+.badge.done{background:rgba(255,255,255,.08);color:var(--gray-light)}
+.badge.win{background:rgba(245,197,24,.2);color:var(--yellow)}
+.empty-state{padding:2rem;text-align:center;color:var(--gray-light);font-size:.85rem}
+
+/* SORTEO PANEL */
+.winner-display{background:linear-gradient(135deg,rgba(245,197,24,.1),rgba(245,197,24,.03));border:1.5px dashed rgba(245,197,24,.4);border-radius:12px;padding:1.25rem;text-align:center;margin-top:1rem;animation:popin .4s ease}
+.winner-display .trophy{font-size:2rem;margin-bottom:.5rem}
+.winner-display .wname{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--yellow);margin-bottom:.2rem}
+.winner-display .wdet{font-size:.8rem;color:var(--gray-light)}
+.btn-sorteo{width:100%;background:linear-gradient(135deg,var(--yellow),#E8A800);color:var(--navy);border:none;border-radius:10px;padding:.85rem;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;margin-top:.75rem;transition:opacity .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-sorteo:hover{opacity:.9;transform:translateY(-1px)}
+.btn-sorteo:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* QR PANEL */
+.qr-preview-wrap{background:white;border-radius:12px;padding:1rem;display:grid;place-items:center;margin-bottom:.75rem}
+#qr-canvas{display:flex;align-items:center;justify-content:center}
+
+/* PRIZES */
+.prize-item{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.prize-item:last-child{border-bottom:none}
+.prize-name{font-weight:600;font-size:.9rem}
+.prize-desc{font-size:.75rem;color:var(--gray-light)}
+
+/* EMAIL CONFIG */
+.config-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.config-row:last-child{border-bottom:none}
+.config-label{font-size:.82rem;color:var(--gray-light);flex:1}
+.config-val{font-size:.82rem;color:var(--white);font-weight:500}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.4rem}
+.status-dot.ok{background:var(--success)}
+.status-dot.off{background:var(--error)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2147483647;display:none;align-items:center;justify-content:center;padding:1rem;isolation:isolate}
+.modal-bg.open{display:flex}
+/* Odoo iframe fix: fallback absolute stacking */
+#rw-root{position:relative;isolation:isolate;transform:translateZ(0)}
+.modal{background:var(--navy-mid);border:1px solid rgba(255,255,255,.1);border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-head{padding:1.5rem 1.5rem 0;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--gray-light);font-size:1.5rem;cursor:pointer;line-height:1}
+.modal-close:hover{color:var(--white)}
+.modal-body{padding:1.5rem}
+
+/* SPINNER */
+.spin{width:18px;height:18px;border:2px solid rgba(13,27,62,.3);border-top-color:var(--navy);border-radius:50%;animation:rota .7s linear infinite;display:none}
+.spin-w{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--white);border-radius:50%;animation:rota .7s linear infinite;display:none}
+@keyframes rota{to{transform:rotate(360deg)}}
+.loading .spin,.loading .spin-w{display:block}
+.loading .btxt{display:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--navy-mid);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem 1.25rem;font-size:.85rem;z-index:2147483646;transition:transform .3s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(34,197,94,.4);color:var(--success)}
+.toast.er{border-color:rgba(239,68,68,.4);color:var(--error)}
+.toast.inf{border-color:rgba(59,130,246,.4);color:#93C5FD}
+
+/* ── BLOCKED VIEW ── */
+.blocked-wrap{min-height:100vh;display:grid;place-items:center;padding:2rem 1rem}
+.blocked-card{background:var(--navy-mid);border:1px solid rgba(239,68,68,.25);border-radius:20px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.blocked-header{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));border-bottom:1px solid rgba(239,68,68,.15);padding:2rem;text-align:center}
+.blocked-icon{font-size:3rem;margin-bottom:.75rem}
+.blocked-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--error);margin-bottom:.35rem}
+.blocked-sub{font-size:.85rem;color:var(--gray-light);line-height:1.5}
+.blocked-body{padding:1.75rem 2rem}
+.blocked-rule{display:flex;align-items:flex-start;gap:.85rem;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.blocked-rule:last-child{border-bottom:none}
+.blocked-rule-icon{font-size:1.25rem;flex-shrink:0;margin-top:2px}
+.blocked-rule-text{font-size:.88rem;color:var(--gray-light);line-height:1.55}
+.blocked-rule-text strong{color:var(--white)}
+.countdown-box{background:rgba(245,197,24,.07);border:1.5px dashed rgba(245,197,24,.3);border-radius:12px;padding:1.1rem 1.25rem;text-align:center;margin:1.25rem 0}
+.countdown-label{font-size:.72rem;color:var(--gray-light);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem}
+.countdown-timer{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--yellow);letter-spacing:2px}
+.blocked-next-unit{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:.9rem 1.1rem;font-size:.84rem;color:#93C5FD;line-height:1.55;margin-top:.75rem}
+.blocked-next-unit strong{color:var(--white)}
+
+/* MISC */
+code{background:rgba(245,197,24,.1);color:var(--yellow);padding:.1rem .35rem;border-radius:4px;font-size:.82rem}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.07);margin:1rem 0}
+.search-bar{width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:.6rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.85rem;outline:none;margin-bottom:1rem}
+.search-bar:focus{border-color:var(--yellow)}
+.search-bar::placeholder{color:var(--gray-light)}
+</style>
+</head>
+<body>
+<div id="rw-root">
+
+<!-- ═══════════════════════════════════════
+     SECURITY BLOCK (screenshot/screenshare)
+═══════════════════════════════════════ -->
+<div class="sec-overlay" id="sec-overlay" style="display:none">
+  <div class="ico">🚫</div>
+  <h2>Acceso no permitido</h2>
+  <p>Este código QR solo puede escanearse directamente desde el vehículo. No es válido desde capturas de pantalla o imágenes.</p>
+  <button class="btn-main" style="max-width:240px;margin-top:.5rem" onclick="document.getElementById('sec-overlay').style.display='none'">Entendido</button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW: REGISTRO
+═══════════════════════════════════════ -->
+<div class="view active" id="view-register">
+  <div class="register-wrap">
+    <div class="register-card">
+      <div class="ticket-header">
+        <div class="ticket-logo">
+          <div class="ticket-icon">🚌</div>
+          <div>
+            <div class="ticket-brand">RutaWin</div>
+          </div>
+        </div>
+        <div class="qr-badge">
+          <div class="qr-dot"></div>
+          <span id="qr-scan-label">QR Escaneado · Verificando...</span>
+        </div>
+        <div style="font-size:.75rem;color:var(--navy);opacity:.7;margin-top:.4rem">
+          Registra tus datos y participa en el sorteo
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <h2 class="form-title">¡Completa tu registro!</h2>
+        <p class="form-sub">Viaja con nosotros y gana. Solo tienes que registrarte una vez por sorteo activo.</p>
+
+        <div class="sorteo-active-badge" id="sorteo-active-label">
+          <span>🗓</span>
+          <span>Sorteo activo: <strong id="sorteo-name-label">Cargando...</strong></span>
+        </div>
+
+        <div class="field">
+          <label>Nombre completo</label>
+          <input type="text" id="reg-nombre" placeholder="Ej. María González Ruiz" maxlength="80">
+          <div class="ferr">Ingresa tu nombre completo</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Cédula / CC</label>
+            <input type="text" id="reg-cedula" placeholder="000000000" maxlength="12">
+            <div class="ferr">Cédula requerida</div>
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <input type="tel" id="reg-telefono" placeholder="300 000 0000" maxlength="15">
+            <div class="ferr">Teléfono requerido</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input type="email" id="reg-email" placeholder="correo@ejemplo.com" maxlength="80">
+          <div class="ferr">Ingresa un correo válido</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Departamento</label>
+            <select id="reg-depto" onchange="loadCities()">
+              <option value="">Selecciona...</option>
+            </select>
+            <div class="ferr">Selecciona departamento</div>
+          </div>
+          <div class="field">
+            <label>Ciudad / Municipio</label>
+            <select id="reg-ciudad" disabled>
+              <option value="">Selecciona depto primero</option>
+            </select>
+            <div class="ferr">Selecciona ciudad</div>
+          </div>
+        </div>
+
+        <div class="terms">
+          <input type="checkbox" id="reg-terms">
+          <label for="reg-terms">
+            Acepto los <a class="terms" onclick="openModal('modal-terms')">términos y condiciones</a> del sorteo y autorizo el uso de mis datos para contactarme en caso de ganar.
+          </label>
+        </div>
+
+        <button class="btn-main" id="btn-registrar" onclick="handleRegister()">
+          <span class="btxt">🎫 Registrarme al Sorteo</span>
+          <div class="spin"></div>
+        </button>
+      </div>
+
+      <div class="ticket-footer">
+        <span>© 2026 RutaWin Transport</span>
+        <span class="sorteo-badge">SORTEO ACTIVO</span>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;text-align:center">
+      <button onclick="showView('view-login')" class="btn-sm out">⚙️ Panel Administrador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW: SUCCESS
+═══════════════════════════════════════ -->
+<div class="view" id="view-success">
+  <div class="success-wrap">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+      <h2 class="success-title">¡Ya estás participando!</h2>
+      <p class="success-sub">Tu registro fue exitoso. Te notificaremos a tu correo electrónico si eres el ganador.</p>
+      <div class="ticket-number">
+        <p>Tu número de ticket</p>
+        <div class="code" id="ticket-code-display">---</div>
+      </div>
+      <p style="font-size:.8rem;color:var(--gray-light);margin-bottom:1.5rem;line-height:1.7">
+        📧 Confirmación enviada a <strong id="success-email" style="color:var(--white)">—</strong><br>
+        📅 Sorteo: <strong id="success-sorteo" style="color:var(--white)">—</strong><br>
+        🚌 Unidad <strong id="success-vehicle" style="color:var(--white)">—</strong>
+      </p>
+      <button class="btn-sec" onclick="showView('view-register')">Registrar otro pasajero</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW: BLOQUEADO (ya registrado hoy)
+═══════════════════════════════════════ -->
+<div class="view" id="view-blocked">
+  <div class="blocked-wrap">
+    <div class="blocked-card">
+      <div class="blocked-header">
+        <div class="blocked-icon">🚫</div>
+        <div class="blocked-title">Ya te registraste hoy</div>
+        <div class="blocked-sub">Solo se permite un registro por día. Puedes volver mañana desde otra unidad.</div>
+      </div>
+      <div class="blocked-body">
+
+        <div class="blocked-rule">
+          <div class="blocked-rule-icon">📅</div>
+          <div class="blocked-rule-text">
+            Te registraste el <strong id="blk-fecha">—</strong> a las <strong id="blk-hora">—</strong> con el ticket <strong id="blk-ticket" style="color:var(--yellow)">—</strong>.
+          </div>
+        </div>
+        <div class="blocked-rule">
+          <div class="blocked-rule-icon">🚌</div>
+          <div class="blocked-rule-text">
+            Usaste la <strong>Unidad #<span id="blk-unit">—</span></strong>. Mañana podrás volver a registrarte desde <strong>cualquier unidad</strong>.
+          </div>
+        </div>
+        <div class="blocked-rule">
+          <div class="blocked-rule-icon">🎫</div>
+          <div class="blocked-rule-text">
+            Estás participando en el sorteo <strong id="blk-sorteo">—</strong>. Tu ticket ya está guardado.
+          </div>
+        </div>
+
+        <div class="countdown-box">
+          <div class="countdown-label">Podrás registrarte nuevamente en</div>
+          <div class="countdown-timer" id="blk-countdown">--:--:--</div>
+        </div>
+
+        <div class="blocked-next-unit" id="blk-next-msg"></div>
+
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;text-align:center">
+      <button onclick="showView('view-login')" class="btn-sm out">⚙️ Panel Administrador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW: LOGIN
+═══════════════════════════════════════ -->
+<div class="view" id="view-login">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="lico">🛡️</div>
+        <h2>Ruta<span>Win</span></h2>
+        <p>Panel de Administración</p>
+      </div>
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" id="login-user" placeholder="admin" onkeydown="if(event.key==='Enter')handleLogin()">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()">
+      </div>
+      <button class="btn-main" style="margin-top:1rem" id="btn-login" onclick="handleLogin()">
+        <span class="btxt">Ingresar al Panel</span>
+        <div class="spin"></div>
+      </button>
+      <div style="margin-top:1rem;text-align:center">
+        <button onclick="showView('view-register')" class="link-btn">← Volver al registro público</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW: ADMIN
+═══════════════════════════════════════ -->
+<div class="view" id="view-admin">
+  <div class="admin-wrap">
+    <nav class="admin-nav">
+      <div class="admin-brand">Ruta<span>Win</span> <span style="font-size:.75rem;color:var(--gray-light);font-weight:400">Admin</span></div>
+      <div class="nav-actions">
+        <button class="btn-sm out" onclick="showView('view-register')">🔗 Ver Registro Público</button>
+        <button class="btn-sm out" onclick="openModal('modal-email-config')">✉️ Configurar Correo</button>
+        <button class="btn-sm pri" onclick="adminLogout()">Cerrar Sesión</button>
+      </div>
+    </nav>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Registrados</div>
+        <div class="stat-val y" id="stat-total">0</div>
+        <div class="stat-delta">Todos los sorteos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sorteo Activo</div>
+        <div class="stat-val b" id="stat-sorteo-activo" style="font-size:1.1rem;margin-top:.3rem">—</div>
+        <div class="stat-delta" id="stat-sorteo-part">0 participantes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unidades con QR</div>
+        <div class="stat-val" id="stat-units">0</div>
+        <div class="stat-delta">Activas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sorteos Realizados</div>
+        <div class="stat-val g" id="stat-drawn">0</div>
+        <div class="stat-delta">Histórico</div>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <!-- LEFT COLUMN -->
+      <div>
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('participantes',this)">👥 Participantes</button>
+          <button class="tab" onclick="switchTab('qr',this)">📱 Códigos QR</button>
+          <button class="tab" onclick="switchTab('premios',this)">🎁 Premios</button>
+          <button class="tab" onclick="switchTab('historial',this)">📋 Historial</button>
+        </div>
+
+        <!-- TAB: PARTICIPANTES -->
+        <div id="tab-participantes" class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Participantes Registrados</span>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn-sm out" onclick="exportCSV()">⬇ CSV</button>
+            </div>
+          </div>
+          <div style="padding:1rem 1.5rem 0">
+            <input class="search-bar" placeholder="🔍 Buscar por nombre, cédula o ticket..." oninput="filterParticipants(this.value)">
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="part-table">
+              <thead><tr>
+                <th>Ticket</th><th>Nombre</th><th>Cédula</th>
+                <th>Ciudad</th><th>Unidad</th><th>Fecha/Hora</th><th>Estado</th>
+              </tr></thead>
+              <tbody id="part-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="part-empty">Aún no hay participantes registrados.</div>
+        </div>
+
+        <!-- TAB: QR CODES -->
+        <div id="tab-qr" class="panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">Gestión de Códigos QR</span>
+            <button class="btn-sm pri" onclick="openModal('modal-add-vehicle')">+ Nueva Unidad</button>
+          </div>
+          <div style="padding:1.5rem" id="qr-list-admin"></div>
+        </div>
+
+        <!-- TAB: PREMIOS -->
+        <div id="tab-premios" class="panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">Gestión de Premios</span>
+            <button class="btn-sm pri" onclick="openModal('modal-add-prize')">+ Agregar Premio</button>
+          </div>
+          <div style="padding:1.5rem" id="prizes-list"></div>
+        </div>
+
+        <!-- TAB: HISTORIAL -->
+        <div id="tab-historial" class="panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">Historial de Sorteos</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Sorteo</th><th>Fecha</th><th>Premio</th><th>Ganador</th><th>Ticket</th><th>Contacto</th><th>Estado</th></tr></thead>
+              <tbody id="history-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="history-empty">No hay sorteos realizados aún.</div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:1rem">
+
+        <!-- SORTEO PANEL -->
+        <div class="panel">
+          <div class="panel-head"><span class="panel-title">🎲 Realizar Sorteo</span></div>
+          <div class="panel-body">
+            <div class="field">
+              <label>Sorteo</label>
+              <select id="draw-sorteo-sel">
+                <option value="">— Selecciona sorteo activo —</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Premio a otorgar</label>
+              <select id="draw-prize-sel">
+                <option value="">— Selecciona premio —</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Filtrar por unidad</label>
+              <select id="draw-unit-sel">
+                <option value="all">Todas las unidades</option>
+              </select>
+            </div>
+            <div id="winner-result"></div>
+            <button class="btn-sorteo" id="btn-draw" onclick="realizarSorteo()">
+              🎫 Ejecutar Sorteo Aleatorio
+            </button>
+            <button class="btn-sorteo" id="btn-notify" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:white;display:none;margin-top:.5rem" onclick="notifyWinner()">
+              ✉️ Notificar al Ganador
+            </button>
+          </div>
+        </div>
+
+        <!-- QR GENERATOR -->
+        <div class="panel">
+          <div class="panel-head"><span class="panel-title">📱 Generar QR</span></div>
+          <div class="panel-body" style="text-align:center">
+            <div class="field">
+              <label>Unidad / Vehículo</label>
+              <select id="qr-unit-sel" onchange="generateQR()">
+                <option value="">Selecciona unidad</option>
+              </select>
+            </div>
+            <div class="qr-preview-wrap">
+              <div id="qr-canvas"></div>
+            </div>
+            <p style="font-size:.75rem;color:var(--gray-light);margin-bottom:.75rem" id="qr-url-label">Selecciona una unidad para generar el QR</p>
+            <button class="btn-sm out" style="width:100%" onclick="downloadQR()" id="btn-dl-qr" disabled>⬇ Descargar QR PNG</button>
+          </div>
+        </div>
+
+        <!-- EMAIL STATUS -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">✉️ Estado del Correo</span>
+            <button class="btn-sm out" onclick="openModal('modal-email-config')">Configurar</button>
+          </div>
+          <div class="panel-body">
+            <div class="config-row">
+              <span class="config-label">Servicio</span>
+              <span class="config-val" id="cfg-service">EmailJS</span>
+            </div>
+            <div class="config-row">
+              <span class="config-label">Remitente</span>
+              <span class="config-val" id="cfg-from">—</span>
+            </div>
+            <div class="config-row">
+              <span class="config-label">Estado</span>
+              <span class="config-val" id="cfg-status"><span class="status-dot off"></span>No configurado</span>
+            </div>
+            <div class="config-row">
+              <span class="config-label">Confirmaciones enviadas</span>
+              <span class="config-val" id="cfg-sent">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     MODALS
+═══════════════════════════════ -->
+
+<!-- TERMS -->
+<div class="modal-bg" id="modal-terms">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Términos y Condiciones del Sorteo</span>
+      <button class="modal-close" onclick="closeModal('modal-terms')">×</button>
+    </div>
+    <div class="modal-body" style="font-size:.85rem;color:var(--gray-light);line-height:1.7">
+      <p><strong style="color:var(--white)">1. Elegibilidad.</strong> Participan todos los pasajeros que registren sus datos mediante el código QR oficial instalado en las unidades de la empresa.</p>
+      <hr class="divider">
+      <p><strong style="color:var(--white)">2. Registro.</strong> Cada persona puede registrarse una sola vez por sorteo. Se requiere cédula válida.</p>
+      <hr class="divider">
+      <p><strong style="color:var(--white)">3. Datos personales.</strong> Los datos recopilados se usarán únicamente para contactar al ganador y no serán cedidos a terceros.</p>
+      <hr class="divider">
+      <p><strong style="color:var(--white)">4. Sorteo.</strong> El ganador se selecciona de forma aleatoria entre todos los participantes registrados en el período del sorteo.</p>
+      <hr class="divider">
+      <p><strong style="color:var(--white)">5. Premio.</strong> El ganador será notificado por correo electrónico y teléfono. Dispone de 15 días para reclamar el premio.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADD VEHICLE -->
+<div class="modal-bg" id="modal-add-vehicle">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">➕ Nueva Unidad / QR</span>
+      <button class="modal-close" onclick="closeModal('modal-add-vehicle')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Número de Unidad</label>
+        <input type="text" id="v-num" placeholder="Ej. 301">
+      </div>
+      <div class="field">
+        <label>Ruta / Línea</label>
+        <input type="text" id="v-route" placeholder="Ej. Express Norte">
+      </div>
+      <div class="field">
+        <label>Placa del Vehículo</label>
+        <input type="text" id="v-plate" placeholder="Ej. ABC-123">
+      </div>
+      <div class="field">
+        <label>URL Base del QR</label>
+        <input type="text" id="v-baseurl" placeholder="https://rutawin.app/r" value="https://rutawin.app/r">
+        <div style="font-size:.72rem;color:var(--gray-light);margin-top:.3rem">El sistema añadirá automáticamente <code>?v=NUMERO&t=TOKEN</code></div>
+      </div>
+      <button class="btn-main" onclick="addVehicle()">Crear Unidad y Generar QR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRIZE -->
+<div class="modal-bg" id="modal-add-prize">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">🎁 Nuevo Premio</span>
+      <button class="modal-close" onclick="closeModal('modal-add-prize')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nombre del Premio</label>
+        <input type="text" id="p-name" placeholder="Ej. Pasajes gratis por un mes">
+      </div>
+      <div class="field">
+        <label>Descripción</label>
+        <input type="text" id="p-desc" placeholder="Ej. 30 viajes en cualquier ruta">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Valor aprox. (COP)</label>
+          <input type="text" id="p-value" placeholder="Ej. 150,000">
+        </div>
+        <div class="field">
+          <label>Categoría</label>
+          <select id="p-cat">
+            <option>Viajes</option>
+            <option>Efectivo</option>
+            <option>Electrodoméstico</option>
+            <option>Mercado</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-main" onclick="addPrize()">Guardar Premio</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL CONFIG -->
+<div class="modal-bg" id="modal-email-config">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">✉️ Configurar Envío de Correo</span>
+      <button class="modal-close" onclick="closeModal('modal-email-config')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:var(--gray-light);margin-bottom:1.25rem;line-height:1.6">
+        Esta app usa <strong style="color:var(--white)">EmailJS</strong> para enviar correos sin backend. Crea una cuenta gratuita en <a href="https://emailjs.com" target="_blank" style="color:var(--yellow)">emailjs.com</a> y copia tus credenciales aquí.
+      </p>
+      <div class="field">
+        <label>EmailJS — Service ID</label>
+        <input type="text" id="cfg-service-id" placeholder="service_xxxxxxx">
+      </div>
+      <div class="field">
+        <label>EmailJS — Template ID (confirmación)</label>
+        <input type="text" id="cfg-template-confirm" placeholder="template_xxxxxxx">
+      </div>
+      <div class="field">
+        <label>EmailJS — Template ID (ganador)</label>
+        <input type="text" id="cfg-template-winner" placeholder="template_xxxxxxx">
+      </div>
+      <div class="field">
+        <label>EmailJS — Public Key</label>
+        <input type="text" id="cfg-pubkey" placeholder="xxxxxxxxxxxxxxxxxxxxxx">
+      </div>
+      <div class="field">
+        <label>Correo remitente (nombre que verá el usuario)</label>
+        <input type="text" id="cfg-from-name" placeholder="RutaWin Sorteos">
+      </div>
+      <hr class="divider">
+      <p style="font-size:.78rem;color:var(--gray-light);margin-bottom:.75rem">
+        <strong style="color:var(--yellow)">Variables del template:</strong> En tu template de EmailJS usa:<br>
+        <code>{{to_email}}</code> <code>{{to_name}}</code> <code>{{ticket_code}}</code> <code>{{sorteo_name}}</code> <code>{{vehicle_id}}</code> <code>{{prize_name}}</code>
+      </p>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn-main" onclick="saveEmailConfig()">💾 Guardar Configuración</button>
+        <button class="btn-sec" style="width:auto;padding:.75rem 1.25rem" onclick="testEmail()">🧪 Probar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SORTEO -->
+<div class="modal-bg" id="modal-add-sorteo">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">🗓 Nuevo Sorteo</span>
+      <button class="modal-close" onclick="closeModal('modal-add-sorteo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nombre del Sorteo</label>
+        <input type="text" id="s-name" placeholder="Ej. Premio Julio 2026">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Fecha de Sorteo</label>
+          <input type="date" id="s-date">
+        </div>
+        <div class="field">
+          <label>Hora</label>
+          <input type="time" id="s-time" value="18:00">
+        </div>
+      </div>
+      <button class="btn-main" onclick="addSorteo()">Crear Sorteo</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE VEHICLE -->
+<div class="modal-bg" id="modal-confirm-delete">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <span class="modal-title">&#x1F5D1; Eliminar Unidad</span>
+      <button class="modal-close" onclick="closeModal('modal-confirm-delete')">&#xD7;</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;margin-bottom:1.25rem">
+        <div style="font-size:2.5rem;margin-bottom:.75rem">&#x26A0;&#xFE0F;</div>
+        <p style="font-size:.95rem;font-weight:600;color:var(--white);margin-bottom:.5rem">¿Eliminar permanentemente?</p>
+        <p style="font-size:.88rem;color:var(--yellow);font-weight:600" id="del-unit-label"></p>
+      </div>
+      <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:.9rem 1rem;font-size:.84rem;color:#FCA5A5;line-height:1.55;margin-bottom:1.25rem" id="del-unit-parts"></div>
+      <p style="font-size:.8rem;color:var(--gray-light);margin-bottom:1.25rem;line-height:1.5">Esta acción <strong style="color:var(--white)">no se puede deshacer</strong>. El código QR dejará de funcionar inmediatamente.</p>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn-sm red" style="flex:1;padding:.75rem" onclick="deleteVehicle()">&#x1F5D1; Sí, eliminar</button>
+        <button class="btn-sec" style="flex:1;padding:.75rem;font-size:.85rem" onclick="closeModal('modal-confirm-delete')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DATABASE (localStorage as persistent storage)
+// ════════════════════════════════════════════════════════
+const DB = {
+  get(key){ try{ return JSON.parse(localStorage.getItem('rw_'+key)||'null') }catch(e){return null} },
+  set(key,val){ localStorage.setItem('rw_'+key, JSON.stringify(val)) },
+  getArr(key){ return this.get(key)||[] },
+  push(key,item){ const a=this.getArr(key); a.push(item); this.set(key,a); return a }
+};
+
+// Init defaults
+if(!DB.get('vehicles')) DB.set('vehicles', [
+  {id:'207', route:'Express Norte', plate:'RUT-207', baseUrl:'https://rutawin.app/r', token: genToken(), active:true},
+  {id:'215', route:'Centro-Sur', plate:'RUT-215', baseUrl:'https://rutawin.app/r', token: genToken(), active:true},
+  {id:'223', route:'Circular Este', plate:'RUT-223', baseUrl:'https://rutawin.app/r', token: genToken(), active:true}
+]);
+if(!DB.get('prizes')) DB.set('prizes',[
+  {id:'p1', name:'Pasajes gratis por un mes', desc:'30 viajes en cualquier ruta', value:'150,000', cat:'Viajes'},
+  {id:'p2', name:'Bono de mercado', desc:'Tarjeta regalo supermercado', value:'200,000', cat:'Mercado'},
+  {id:'p3', name:'Efectivo', desc:'Premio en dinero en efectivo', value:'500,000', cat:'Efectivo'}
+]);
+if(!DB.get('sorteos')) DB.set('sorteos',[
+  {id:'s1', name:'Premio Julio 2026', date:'2026-07-31', time:'18:00', active:true}
+]);
+if(!DB.get('participants')) DB.set('participants',[]);
+if(!DB.get('history')) DB.set('history',[]);
+if(!DB.get('emailConfig')) DB.set('emailConfig',{serviceId:'',templateConfirm:'',templateWinner:'',pubkey:'',fromName:'RutaWin Sorteos'});
+if(!DB.get('emailSent')) DB.set('emailSent',0);
+
+function genToken(){ return Math.random().toString(36).substring(2,10).toUpperCase() }
+
+// ════════════════════════════════════════════════════════
+//  SECURITY: QR token validation
+// ════════════════════════════════════════════════════════
+const urlParams = new URLSearchParams(window.location.search);
+const vehicleId = urlParams.get('v') || null;
+const qrToken   = urlParams.get('t') || null;
+
+function validateQRAccess(){
+  if(!vehicleId) return true; // Direct access (admin or testing)
+  const vehicles = DB.getArr('vehicles');
+  const v = vehicles.find(x => x.id === vehicleId);
+  if(!v){ showSecurityBlock('Unidad no registrada en el sistema.'); return false; }
+  if(qrToken && v.token !== qrToken){ showSecurityBlock('Este código QR no es válido o ya fue regenerado. Escanea el código desde el vehículo.'); return false; }
+  // Mark QR as recently scanned (anti-screenshot: check time window)
+  const now = Date.now();
+  const lastScan = DB.get('lastScan_'+vehicleId) || 0;
+  DB.set('lastScan_'+vehicleId, now);
+  return true;
+}
+function showSecurityBlock(msg){
+  const el = document.getElementById('sec-overlay');
+  el.querySelector('p').textContent = msg;
+  el.style.display = 'flex';
+}
+
+// ════════════════════════════════════════════════════════
+//  COLOMBIA: Departments & Cities
+// ════════════════════════════════════════════════════════
+const COLOMBIA = {
+  "Amazonas":["Leticia","Puerto Nariño"],
+  "Antioquia":["Medellín","Bello","Itagüí","Envigado","Apartadó","Turbo","Rionegro","Caucasia","Montería","Marinilla","La Ceja","El Retiro","Caldas","La Estrella","Sabaneta","Copacabana","Girardota","Barbosa","Andes","Santa Fe de Antioquia","Jericó","Cisneros","Yolombó","Segovia"],
+  "Arauca":["Arauca","Tame","Saravena","Arauquita","Fortul","Puerto Rondón","Cravo Norte"],
+  "Atlántico":["Barranquilla","Soledad","Malambo","Sabanalarga","Galapa","Puerto Colombia","Baranoa","Palmar de Varela","Santo Tomás","Sabanagrande"],
+  "Bolívar":["Cartagena","Magangué","El Carmen de Bolívar","Mompox","Turbaco","Arjona","San Juan Nepomuceno","San Jacinto","Villanueva","Zambrano"],
+  "Boyacá":["Tunja","Duitama","Sogamoso","Chiquinquirá","Paipa","Villa de Leyva","Moniquirá","Ramiriquí","Guateque","Miraflores","Puerto Boyacá"],
+  "Caldas":["Manizales","La Dorada","Chinchiná","Riosucio","Villamaría","Anserma","Salamina","Aguadas","Manzanares","Pensilvania"],
+  "Caquetá":["Florencia","San Vicente del Caguán","Puerto Rico","El Doncello","La Montañita","Milán","Valparaíso","Belén de los Andaquíes"],
+  "Casanare":["Yopal","Aguazul","Villanueva","Monterrey","Tauramena","Paz de Ariporo","Trinidad","Orocué","Hato Corozal"],
+  "Cauca":["Popayán","Santander de Quilichao","Puerto Tejada","Patía","Timbío","El Tambo","Bolívar","Miranda","Caloto"],
+  "Cesar":["Valledupar","Aguachica","Codazzi","Bosconia","La Paz","Chimichagua","Pelaya","Río de Oro"],
+  "Chocó":["Quibdó","Istmina","Tadó","Apartadó","Condoto","Nuquí","Acandí","Bahía Solano"],
+  "Córdoba":["Montería","Cereté","Sahagún","Lorica","Montelíbano","Tierralta","Planeta Rica","Ciénaga de Oro"],
+  "Cundinamarca":["Bogotá D.C.","Soacha","Facatativá","Zipaquirá","Chía","Fusagasugá","Girardot","Madrid","Mosquera","Funza","Cajicá","Tocancipá","La Calera","Sibaté","Villeta","Guaduas","Ubaté"],
+  "Guainía":["Inírida"],
+  "Guaviare":["San José del Guaviare","Calamar","El Retorno","Miraflores"],
+  "Huila":["Neiva","Pitalito","Garzón","La Plata","Campoalegre","Rivera","Palermo","Timaná","San Agustín","Isnos"],
+  "La Guajira":["Riohacha","Maicao","Uribia","Manaure","Fonseca","Barrancas","Albania","Dibulla"],
+  "Magdalena":["Santa Marta","Ciénaga","Fundación","El Banco","Plato","Aracataca","Pivijay","Zona Bananera"],
+  "Meta":["Villavicencio","Acacías","Granada","San Martín","Puerto López","Cumaral","Restrepo","El Dorado","Puerto Gaitán"],
+  "Nariño":["Pasto","Tumaco","Ipiales","Túquerres","La Unión","Samaniego","Barbacoas","Sandoná","El Charco"],
+  "Norte de Santander":["Cúcuta","Ocaña","Pamplona","Villa del Rosario","Los Patios","El Zulia","Tibú","Sardinata","Chinácota"],
+  "Putumayo":["Mocoa","Puerto Asís","Orito","Villagarzón","Sibundoy","Valle del Guamuez","Puerto Caicedo"],
+  "Quindío":["Armenia","Calarcá","Montenegro","Quimbaya","La Tebaida","Filandia","Circasia","Salento","Pijao"],
+  "Risaralda":["Pereira","Dosquebradas","Santa Rosa de Cabal","La Virginia","Marsella","Quinchía","Balboa","Guática","Apía"],
+  "San Andrés y Providencia":["San Andrés","Providencia"],
+  "Santander":["Bucaramanga","Floridablanca","Girón","Piedecuesta","Barrancabermeja","Vélez","Socorro","San Gil","Barbosa","Málaga","Lebrija"],
+  "Sucre":["Sincelejo","Corozal","Sampués","Tolú","San Marcos","Morroa","Palmito","Ovejas"],
+  "Tolima":["Ibagué","Espinal","Melgar","Honda","Líbano","Purificación","Chaparral","Mariquita","Flandes","Fresno"],
+  "Valle del Cauca":["Cali","Buenaventura","Palmira","Tuluá","Cartago","Buga","Jamundí","Yumbo","Candelaria","Sevilla","Roldanillo","Florida","Pradera","La Unión","Zarzal","Dagua","Restrepo"],
+  "Vaupés":["Mitú","Taraira"],
+  "Vichada":["Puerto Carreño","La Primavera","Santa Rosalía","Cumaribo"]
+};
+
+function populateDepts(){
+  const sel = document.getElementById('reg-depto');
+  sel.innerHTML = '<option value="">Selecciona...</option>';
+  Object.keys(COLOMBIA).sort().forEach(d=>{
+    sel.innerHTML += `<option value="${d}">${d}</option>`;
+  });
+}
+function loadCities(){
+  const dept = document.getElementById('reg-depto').value;
+  const sel = document.getElementById('reg-ciudad');
+  document.getElementById('reg-depto').classList.remove('err');
+  if(!dept){ sel.innerHTML='<option value="">Selecciona depto primero</option>'; sel.disabled=true; return; }
+  const cities = COLOMBIA[dept]||[];
+  sel.innerHTML = '<option value="">Selecciona ciudad...</option>' + cities.map(c=>`<option>${c}</option>`).join('');
+  sel.disabled = false;
+}
+
+// ════════════════════════════════════════════════════════
+//  VIEW MANAGEMENT
+// ════════════════════════════════════════════════════════
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='view-admin') refreshAdmin();
+}
+function adminLogout(){ showView('view-login'); }
+
+// ════════════════════════════════════════════════════════
+//  BLOCKED VIEW — registro diario + control de unidad
+// ════════════════════════════════════════════════════════
+let _countdownInterval = null;
+
+function showBlockedView(entry){
+  document.getElementById('blk-fecha').textContent   = entry.fecha;
+  document.getElementById('blk-hora').textContent    = entry.hora;
+  document.getElementById('blk-ticket').textContent  = entry.ticket;
+  document.getElementById('blk-unit').textContent    = entry.vehicleId;
+  document.getElementById('blk-sorteo').textContent  = entry.sorteoName || '—';
+
+  // Mensaje informativo mañana
+  const nextMsg = document.getElementById('blk-next-msg');
+  nextMsg.innerHTML = '🚌 Mañana podrás registrarte nuevamente desde <strong>cualquier unidad</strong> de la flota, incluyendo esta misma.';
+
+  // Countdown hasta medianoche
+  if(_countdownInterval) clearInterval(_countdownInterval);
+  function updateCountdown(){
+    const now  = new Date();
+    const mañana = new Date(now); mañana.setDate(mañana.getDate()+1);
+    mañana.setHours(0,0,0,0);
+    const diff = mañana - now;
+    const h = String(Math.floor(diff/3600000)).padStart(2,'0');
+    const m = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
+    const s = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+    const el = document.getElementById('blk-countdown');
+    if(el) el.textContent = `${h}:${m}:${s}`;
+  }
+  updateCountdown();
+  _countdownInterval = setInterval(updateCountdown, 1000);
+
+  showView('view-blocked');
+}
+
+// ════════════════════════════════════════════════════════
+//  REGISTER FLOW
+// ════════════════════════════════════════════════════════
+function initRegisterView(){
+  populateDepts();
+  if(vehicleId){
+    document.getElementById('qr-scan-label').textContent = `QR Escaneado · Unidad #${vehicleId} ✓`;
+  } else {
+    document.getElementById('qr-scan-label').textContent = 'Registro Manual';
+  }
+  const sorteos = DB.getArr('sorteos').filter(s=>s.active);
+  if(sorteos.length>0){
+    document.getElementById('sorteo-name-label').textContent = sorteos[0].name;
+  } else {
+    document.getElementById('sorteo-name-label').textContent = 'Sin sorteo activo';
+    document.getElementById('sorteo-active-label').style.background='rgba(239,68,68,.08)';
+    document.getElementById('sorteo-active-label').style.borderColor='rgba(239,68,68,.2)';
+    document.getElementById('sorteo-active-label').querySelector('span:last-child').style.color='var(--error)';
+  }
+}
+
+function handleRegister(){
+  const nombre  = document.getElementById('reg-nombre');
+  const cedula  = document.getElementById('reg-cedula');
+  const tel     = document.getElementById('reg-telefono');
+  const email   = document.getElementById('reg-email');
+  const depto   = document.getElementById('reg-depto');
+  const ciudad  = document.getElementById('reg-ciudad');
+  const terms   = document.getElementById('reg-terms');
+
+  let ok = true;
+  const req = [nombre,cedula,tel,email];
+  req.forEach(f=>{ f.value.trim()?f.classList.remove('err'):( f.classList.add('err'), ok=false ) });
+  if(email.value && !/\S+@\S+\.\S+/.test(email.value)){ email.classList.add('err'); ok=false; }
+  if(!depto.value){ depto.classList.add('err'); ok=false; }
+  if(!ciudad.value||ciudad.value==='Selecciona ciudad...'){ ciudad.classList.add('err'); ok=false; }
+  if(!terms.checked){ showToast('Debes aceptar los términos y condiciones','er'); ok=false; }
+  if(!ok) return;
+
+  // ── REGLA DE REGISTRO DIARIO ──────────────────────────────
+  // 1 registro por cédula por día. Al día siguiente puede volver desde cualquier unidad
+  const todayStr = new Date().toLocaleDateString('es-CO');
+  const allParts = DB.getArr('participants');
+  const todayEntry = allParts.find(p =>
+    p.cedula === cedula.value.trim() && p.fecha === todayStr
+  );
+  if(todayEntry){
+    showBlockedView(todayEntry);
+    return;
+  }
+
+  // Al dia siguiente puede registrarse desde la misma unidad u otra
+
+  // Duplicate check: misma cédula en el mismo sorteo activo
+  const sorteos = DB.getArr('sorteos').filter(s=>s.active);
+  if(sorteos.length===0){ showToast('No hay sorteo activo en este momento','er'); return; }
+  const activeSorteo = sorteos[0];
+  const existing = allParts.find(p=>p.cedula===cedula.value.trim()&&p.sorteoId===activeSorteo.id);
+  if(existing){ showToast('Esta cédula ya está registrada en el sorteo activo','er'); return; }
+
+  const btn = document.getElementById('btn-registrar');
+  btn.classList.add('loading'); btn.disabled=true;
+
+  setTimeout(()=>{
+    btn.classList.remove('loading'); btn.disabled=false;
+    const now = new Date();
+    const entry = {
+      id: 'p_'+Date.now(),
+      ticket: 'TK-'+Math.floor(1000+Math.random()*9000),
+      nombre: nombre.value.trim(),
+      cedula: cedula.value.trim(),
+      telefono: tel.value.trim(),
+      email: email.value.trim(),
+      departamento: depto.value,
+      ciudad: ciudad.value,
+      vehicleId: vehicleId||'MANUAL',
+      sorteoId: activeSorteo.id,
+      sorteoName: activeSorteo.name,
+      fecha: now.toLocaleDateString('es-CO'),
+      hora: now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}),
+      timestamp: now.toISOString(),
+      winner: false
+    };
+    DB.push('participants', entry);
+
+    // Send confirmation email
+    sendConfirmationEmail(entry, activeSorteo);
+
+    // Update success view
+    document.getElementById('ticket-code-display').textContent = entry.ticket;
+    document.getElementById('success-email').textContent = entry.email;
+    document.getElementById('success-sorteo').textContent = activeSorteo.name;
+    document.getElementById('success-vehicle').textContent = vehicleId ? `#${vehicleId}` : 'Registro manual';
+
+    // Clear form
+    [nombre,cedula,tel,email].forEach(f=>f.value='');
+    depto.value=''; ciudad.innerHTML='<option>Selecciona depto primero</option>'; ciudad.disabled=true;
+    terms.checked=false;
+
+    showView('view-success');
+  }, 1600);
+}
+
+// ════════════════════════════════════════════════════════
+//  EMAIL (EmailJS)
+// ════════════════════════════════════════════════════════
+let ejsInit = false;
+function ensureEJS(){
+  const cfg = DB.get('emailConfig');
+  if(!cfg||!cfg.pubkey) return false;
+  if(!ejsInit){ emailjs.init(cfg.pubkey); ejsInit=true; }
+  return true;
+}
+
+function sendConfirmationEmail(entry, sorteo){
+  if(!ensureEJS()) return;
+  const cfg = DB.get('emailConfig');
+  if(!cfg.templateConfirm) return;
+  emailjs.send(cfg.serviceId, cfg.templateConfirm, {
+    to_email: entry.email,
+    to_name: entry.nombre,
+    ticket_code: entry.ticket,
+    sorteo_name: sorteo.name,
+    vehicle_id: entry.vehicleId,
+    fecha: entry.fecha + ' ' + entry.hora,
+    ciudad: entry.ciudad,
+    from_name: cfg.fromName
+  }).then(()=>{
+    const sent = (DB.get('emailSent')||0)+1;
+    DB.set('emailSent',sent);
+    document.getElementById('cfg-sent') && (document.getElementById('cfg-sent').textContent = sent);
+  }).catch(e=>console.warn('Email error:',e));
+}
+
+function notifyWinner(){
+  const last = DB.get('lastWinner');
+  if(!last) return;
+  if(!ensureEJS()){ showToast('Configura el correo antes de notificar','er'); return; }
+  const cfg = DB.get('emailConfig');
+  if(!cfg.templateWinner){ showToast('Falta el Template ID del ganador en la config de correo','er'); return; }
+  const btn = document.getElementById('btn-notify');
+  btn.disabled=true; btn.textContent='Enviando...';
+  emailjs.send(cfg.serviceId, cfg.templateWinner, {
+    to_email: last.email,
+    to_name: last.nombre,
+    ticket_code: last.ticket,
+    sorteo_name: last.sorteoName,
+    prize_name: last.prizeName,
+    from_name: cfg.fromName
+  }).then(()=>{
+    showToast(`✉️ Notificación enviada a ${last.email}`,'ok');
+    btn.disabled=false; btn.innerHTML='✉️ Notificar al Ganador';
+  }).catch(e=>{
+    showToast('Error al enviar: '+e.text,'er');
+    btn.disabled=false; btn.innerHTML='✉️ Notificar al Ganador';
+  });
+}
+
+function saveEmailConfig(){
+  const cfg = {
+    serviceId: document.getElementById('cfg-service-id').value.trim(),
+    templateConfirm: document.getElementById('cfg-template-confirm').value.trim(),
+    templateWinner: document.getElementById('cfg-template-winner').value.trim(),
+    pubkey: document.getElementById('cfg-pubkey').value.trim(),
+    fromName: document.getElementById('cfg-from-name').value.trim()||'RutaWin Sorteos'
+  };
+  DB.set('emailConfig',cfg);
+  ejsInit=false;
+  updateEmailStatus();
+  closeModal('modal-email-config');
+  showToast('Configuración de correo guardada','ok');
+}
+
+function testEmail(){
+  if(!ensureEJS()){ showToast('Completa las credenciales primero','er'); return; }
+  const cfg = DB.get('emailConfig');
+  emailjs.send(cfg.serviceId, cfg.templateConfirm, {
+    to_email: 'test@rutawin.app',
+    to_name: 'Pasajero de Prueba',
+    ticket_code: 'TK-TEST',
+    sorteo_name: 'Prueba',
+    vehicle_id: '000',
+    fecha: new Date().toLocaleString('es-CO'),
+    ciudad: 'Bogotá',
+    from_name: cfg.fromName
+  }).then(()=> showToast('✅ Correo de prueba enviado','ok'))
+    .catch(e=> showToast('Error: '+e.text,'er'));
+}
+
+function updateEmailStatus(){
+  const cfg = DB.get('emailConfig');
+  if(cfg&&cfg.serviceId&&cfg.pubkey){
+    document.getElementById('cfg-status').innerHTML = '<span class="status-dot ok"></span>Configurado';
+    document.getElementById('cfg-from').textContent = cfg.fromName||'—';
+  } else {
+    document.getElementById('cfg-status').innerHTML = '<span class="status-dot off"></span>No configurado';
+    document.getElementById('cfg-from').textContent = '—';
+  }
+  document.getElementById('cfg-sent').textContent = DB.get('emailSent')||0;
+  // Pre-fill modal
+  if(cfg){
+    document.getElementById('cfg-service-id').value = cfg.serviceId||'';
+    document.getElementById('cfg-template-confirm').value = cfg.templateConfirm||'';
+    document.getElementById('cfg-template-winner').value = cfg.templateWinner||'';
+    document.getElementById('cfg-pubkey').value = cfg.pubkey||'';
+    document.getElementById('cfg-from-name').value = cfg.fromName||'';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  LOGIN
+// ════════════════════════════════════════════════════════
+function handleLogin(){
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  if(!u||!p){ showToast('Ingresa usuario y contraseña','er'); return; }
+  const btn = document.getElementById('btn-login');
+  btn.classList.add('loading'); btn.disabled=true;
+  setTimeout(()=>{
+    btn.classList.remove('loading'); btn.disabled=false;
+    if(u==='admin'&&p==='admin123'){
+      showView('view-admin');
+    } else {
+      showToast('Credenciales incorrectas','er');
+    }
+  },1000);
+}
+
+// ════════════════════════════════════════════════════════
+//  ADMIN REFRESH
+// ════════════════════════════════════════════════════════
+function refreshAdmin(){
+  const parts = DB.getArr('participants');
+  const vehicles = DB.getArr('vehicles');
+  const sorteos = DB.getArr('sorteos');
+  const history = DB.getArr('history');
+
+  document.getElementById('stat-total').textContent = parts.length;
+  document.getElementById('stat-units').textContent = vehicles.filter(v=>v.active).length;
+  document.getElementById('stat-drawn').textContent = history.length;
+
+  const active = sorteos.find(s=>s.active);
+  if(active){
+    document.getElementById('stat-sorteo-activo').textContent = active.name;
+    const cnt = parts.filter(p=>p.sorteoId===active.id).length;
+    document.getElementById('stat-sorteo-part').textContent = cnt+' participantes';
+  }
+
+  renderParticipants(parts);
+  renderQRAdmin(vehicles);
+  renderPrizes();
+  renderHistory(history);
+  populateDrawSelects(sorteos, vehicles);
+  populateQRSelect(vehicles);
+  updateEmailStatus();
+}
+
+// ════════════════════════════════════════════════════════
+//  PARTICIPANTS TABLE
+// ════════════════════════════════════════════════════════
+let allParticipants = [];
+function renderParticipants(parts){
+  allParticipants = parts || DB.getArr('participants');
+  filterParticipants('');
+}
+function filterParticipants(q){
+  const p = allParticipants.filter(x=>
+    !q||x.nombre.toLowerCase().includes(q.toLowerCase())||
+    x.cedula.includes(q)||x.ticket.toLowerCase().includes(q.toLowerCase())
+  );
+  const tbody = document.getElementById('part-tbody');
+  const empty = document.getElementById('part-empty');
+  if(p.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = p.map(x=>`
+    <tr>
+      <td><span style="color:var(--yellow);font-weight:600">${x.ticket}</span></td>
+      <td>${x.nombre}</td>
+      <td style="color:var(--gray-light)">${x.cedula}</td>
+      <td>${x.ciudad}, ${x.departamento}</td>
+      <td>#${x.vehicleId}</td>
+      <td style="font-size:.78rem;color:var(--gray-light)">${x.fecha}<br>${x.hora}</td>
+      <td><span class="badge ${x.winner?'win':'act'}">${x.winner?'🏆 Ganador':'Activo'}</span></td>
+    </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  QR ADMIN
+// ════════════════════════════════════════════════════════
+function renderQRAdmin(vehicles){
+  const el = document.getElementById('qr-list-admin');
+  if(!vehicles||!vehicles.length){ el.innerHTML='<div class="empty-state">No hay unidades registradas.</div>'; return; }
+  el.innerHTML = vehicles.map(v=>`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid rgba(255,255,255,.05);gap:.75rem">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem">
+          <span style="font-weight:600;font-size:.9rem">Unidad #${v.id} \u2014 ${v.route}</span>
+          <span class="badge ${v.active?'act':'done'}">${v.active?'Activo':'Inactivo'}</span>
+        </div>
+        <div style="font-size:.75rem;color:var(--gray-light)">Placa: ${v.plate}&nbsp;\u00b7&nbsp;<span style="color:var(--yellow);word-break:break-all">${v.baseUrl}?v=${v.id}&t=${v.token}</span></div>
+      </div>
+      <div style="display:flex;gap:.4rem;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn-sm grn" onclick="regenerateToken('${v.id}')">&#x1F504; Token</button>
+        <button class="btn-sm out" onclick="toggleVehicleActive('${v.id}')">${v.active?'&#x23F8;':'&#x25B6;'}</button>
+        <button class="btn-sm red" onclick="confirmDeleteVehicle('${v.id}','${v.route}')">&#x1F5D1; Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function addVehicle(){
+  const num   = document.getElementById('v-num').value.trim();
+  const route = document.getElementById('v-route').value.trim();
+  const plate = document.getElementById('v-plate').value.trim();
+  const base  = document.getElementById('v-baseurl').value.trim();
+  if(!num||!route){ showToast('Número y ruta son requeridos','er'); return; }
+  const existing = DB.getArr('vehicles').find(v=>v.id===num);
+  if(existing){ showToast('Ya existe una unidad con ese número','er'); return; }
+  DB.push('vehicles',{id:num,route,plate,baseUrl:base||'https://rutawin.app/r',token:genToken(),active:true});
+  closeModal('modal-add-vehicle');
+  showToast(`Unidad #${num} creada`,'ok');
+  refreshAdmin();
+}
+
+function regenerateToken(vid){
+  const v = DB.getArr('vehicles');
+  const i = v.findIndex(x=>x.id===vid);
+  if(i<0) return;
+  v[i].token = genToken();
+  DB.set('vehicles',v);
+  showToast(`Token de unidad #${vid} regenerado. Los QR anteriores ya no son válidos.`,'inf');
+  refreshAdmin();
+}
+
+function toggleVehicleActive(vid){
+  const v = DB.getArr('vehicles');
+  const i = v.findIndex(x=>x.id===vid);
+  if(i<0) return;
+  v[i].active = !v[i].active;
+  DB.set('vehicles',v);
+  showToast(`Unidad #${vid} ${v[i].active?'activada':'desactivada'}`,'inf');
+  refreshAdmin();
+}
+
+function confirmDeleteVehicle(vid, route){
+  // Reutilizamos el modal genérico de confirmación
+  const modal = document.getElementById('modal-confirm-delete');
+  document.getElementById('del-unit-label').textContent = `Unidad #${vid} — ${route}`;
+  const parts = DB.getArr('participants').filter(p=>p.vehicleId===vid).length;
+  document.getElementById('del-unit-parts').textContent =
+    parts > 0
+      ? `Esta unidad tiene ${parts} registro(s) de participantes. Los registros se conservarán, pero la unidad y su QR quedarán eliminados.`
+      : 'Esta unidad no tiene registros de participantes asociados.';
+  // Store pending id
+  modal.dataset.pendingId = vid;
+  openModal('modal-confirm-delete');
+}
+
+function deleteVehicle(){
+  const modal = document.getElementById('modal-confirm-delete');
+  const vid = modal.dataset.pendingId;
+  if(!vid) return;
+  const vehicles = DB.getArr('vehicles').filter(v=>v.id!==vid);
+  DB.set('vehicles', vehicles);
+  closeModal('modal-confirm-delete');
+  showToast(`Unidad #${vid} eliminada`, 'ok');
+  refreshAdmin();
+}
+
+// ════════════════════════════════════════════════════════
+//  QR GENERATOR
+// ════════════════════════════════════════════════════════
+function populateQRSelect(vehicles){
+  const sel = document.getElementById('qr-unit-sel');
+  sel.innerHTML = '<option value="">Selecciona unidad</option>';
+  (vehicles||DB.getArr('vehicles')).forEach(v=>{
+    sel.innerHTML += `<option value="${v.id}">${v.id} — ${v.route}</option>`;
+  });
+  // Also populate draw unit select
+  const dsel = document.getElementById('draw-unit-sel');
+  dsel.innerHTML = '<option value="all">Todas las unidades</option>';
+  (vehicles||DB.getArr('vehicles')).forEach(v=>{
+    dsel.innerHTML += `<option value="${v.id}">#${v.id} ${v.route}</option>`;
+  });
+}
+
+function generateQR(){
+  const vid = document.getElementById('qr-unit-sel').value;
+  const canvas = document.getElementById('qr-canvas');
+  canvas.innerHTML = '';
+  document.getElementById('btn-dl-qr').disabled = true;
+  document.getElementById('qr-url-label').textContent = 'Selecciona una unidad para generar el QR';
+  if(!vid) return;
+  const v = DB.getArr('vehicles').find(x=>x.id===vid);
+  if(!v) return;
+  const url = `${v.baseUrl}?v=${v.id}&t=${v.token}`;
+  document.getElementById('qr-url-label').innerHTML = `<code>${url}</code>`;
+  try {
+    new QRCode(canvas, { text: url, width: 200, height: 200, colorDark:'#0D1B3E', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
+  } catch(e) { canvas.innerHTML = `<p style="font-size:.75rem;color:var(--error)">Error generando QR</p>`; return; }
+  document.getElementById('btn-dl-qr').disabled = false;
+}
+
+function downloadQR(){
+  const img = document.querySelector('#qr-canvas img');
+  const canvas = document.querySelector('#qr-canvas canvas');
+  const vid = document.getElementById('qr-unit-sel').value;
+  if(!img&&!canvas){ showToast('Genera el QR primero','er'); return; }
+  let dataUrl;
+  if(canvas){ dataUrl = canvas.toDataURL('image/png'); }
+  else { 
+    const c = document.createElement('canvas');
+    c.width=200; c.height=200;
+    const ctx=c.getContext('2d');
+    const i=new Image(); i.src=img.src;
+    i.onload=()=>{ ctx.drawImage(i,0,0); const a=document.createElement('a'); a.download=`qr-unidad-${vid}.png`; a.href=c.toDataURL(); a.click(); };
+    return;
+  }
+  const a = document.createElement('a');
+  a.download = `qr-unidad-${vid}.png`;
+  a.href = dataUrl;
+  a.click();
+  showToast(`QR de unidad #${vid} descargado`,'ok');
+}
+
+// ════════════════════════════════════════════════════════
+//  PRIZES
+// ════════════════════════════════════════════════════════
+function renderPrizes(){
+  const prizes = DB.getArr('prizes');
+  const el = document.getElementById('prizes-list');
+  if(!prizes.length){ el.innerHTML='<div class="empty-state">No hay premios configurados.</div>'; return; }
+  el.innerHTML = prizes.map(p=>`
+    <div class="prize-item">
+      <div>
+        <div class="prize-name">🎁 ${p.name}</div>
+        <div class="prize-desc">${p.desc} &nbsp;·&nbsp; $${p.value} COP &nbsp;·&nbsp; <span style="color:var(--yellow)">${p.cat}</span></div>
+      </div>
+      <button class="btn-sm red" onclick="deletePrize('${p.id}')">✕</button>
+    </div>`).join('');
+  // Update draw prize select
+  const sel = document.getElementById('draw-prize-sel');
+  sel.innerHTML = '<option value="">— Selecciona premio —</option>';
+  prizes.forEach(p=>{ sel.innerHTML += `<option value="${p.id}">${p.name}</option>`; });
+}
+
+function addPrize(){
+  const name = document.getElementById('p-name').value.trim();
+  const desc = document.getElementById('p-desc').value.trim();
+  const val  = document.getElementById('p-value').value.trim();
+  const cat  = document.getElementById('p-cat').value;
+  if(!name){ showToast('El nombre del premio es requerido','er'); return; }
+  DB.push('prizes',{id:'p'+Date.now(),name,desc,value:val||'0',cat});
+  closeModal('modal-add-prize');
+  renderPrizes();
+  showToast('Premio agregado','ok');
+}
+
+function deletePrize(pid){
+  const prizes = DB.getArr('prizes').filter(p=>p.id!==pid);
+  DB.set('prizes',prizes);
+  renderPrizes();
+  showToast('Premio eliminado','ok');
+}
+
+// ════════════════════════════════════════════════════════
+//  SORTEOS
+// ════════════════════════════════════════════════════════
+function populateDrawSelects(sorteos){
+  const sel = document.getElementById('draw-sorteo-sel');
+  sel.innerHTML = '<option value="">— Selecciona sorteo —</option>';
+  (sorteos||DB.getArr('sorteos')).filter(s=>s.active).forEach(s=>{
+    sel.innerHTML += `<option value="${s.id}">${s.name} (${s.date})</option>`;
+  });
+}
+
+function addSorteo(){
+  const name = document.getElementById('s-name').value.trim();
+  const date = document.getElementById('s-date').value;
+  const time = document.getElementById('s-time').value;
+  if(!name||!date){ showToast('Nombre y fecha requeridos','er'); return; }
+  DB.push('sorteos',{id:'s'+Date.now(),name,date,time,active:true});
+  closeModal('modal-add-sorteo');
+  showToast('Sorteo creado','ok');
+  refreshAdmin();
+}
+
+// ════════════════════════════════════════════════════════
+//  DRAW
+// ════════════════════════════════════════════════════════
+function realizarSorteo(){
+  const sorteoId = document.getElementById('draw-sorteo-sel').value;
+  const prizeId  = document.getElementById('draw-prize-sel').value;
+  const unitFilter = document.getElementById('draw-unit-sel').value;
+  if(!sorteoId){ showToast('Selecciona un sorteo','er'); return; }
+  if(!prizeId){ showToast('Selecciona el premio a otorgar','er'); return; }
+
+  let pool = DB.getArr('participants').filter(p=>p.sorteoId===sorteoId&&!p.winner);
+  if(unitFilter!=='all') pool = pool.filter(p=>p.vehicleId===unitFilter);
+  if(pool.length===0){ showToast('No hay participantes elegibles para este sorteo','er'); return; }
+
+  const winner = pool[Math.floor(Math.random()*pool.length)];
+  const prize  = DB.getArr('prizes').find(p=>p.id===prizeId);
+  const sorteo = DB.getArr('sorteos').find(s=>s.id===sorteoId);
+
+  // Mark as winner
+  const parts = DB.getArr('participants');
+  const idx = parts.findIndex(p=>p.id===winner.id);
+  if(idx>=0){ parts[idx].winner=true; DB.set('participants',parts); }
+
+  // Add to history
+  const now = new Date();
+  DB.push('history',{
+    id:'h'+Date.now(),
+    sorteoName: sorteo.name,
+    date: now.toLocaleDateString('es-CO'),
+    prize: prize?prize.name:'—',
+    winnerName: winner.nombre,
+    ticket: winner.ticket,
+    email: winner.email,
+    telefono: winner.telefono,
+    status:'Pendiente entrega'
+  });
+
+  // Save last winner for email
+  DB.set('lastWinner',{...winner, prizeName: prize?prize.name:'—'});
+
+  document.getElementById('winner-result').innerHTML = `
+    <div class="winner-display">
+      <div class="trophy">🏆</div>
+      <div class="wname">${winner.nombre}</div>
+      <div class="wdet">Ticket ${winner.ticket} · Unidad #${winner.vehicleId}</div>
+      <div class="wdet">${winner.email} · ${winner.telefono}</div>
+      <div class="wdet" style="margin-top:.4rem;color:var(--yellow)">Premio: ${prize?prize.name:'—'}</div>
+    </div>`;
+  document.getElementById('btn-notify').style.display='flex';
+  showToast('¡Ganador seleccionado!','ok');
+  renderParticipants();
+  renderHistory();
+  refreshAdmin();
+}
+
+// ════════════════════════════════════════════════════════
+//  HISTORY
+// ════════════════════════════════════════════════════════
+function renderHistory(history){
+  const h = history||DB.getArr('history');
+  const tbody = document.getElementById('history-tbody');
+  const empty = document.getElementById('history-empty');
+  if(!h.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = h.map(x=>`
+    <tr>
+      <td>${x.sorteoName}</td>
+      <td style="font-size:.78rem">${x.date}</td>
+      <td style="color:var(--yellow)">${x.prize}</td>
+      <td>${x.winnerName}</td>
+      <td><span style="color:var(--yellow);font-weight:600">${x.ticket}</span></td>
+      <td style="font-size:.75rem;color:var(--gray-light)">${x.email}</td>
+      <td><span class="badge pend">${x.status}</span></td>
+    </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['participantes','qr','premios','historial'].forEach(t=>{
+    const e=document.getElementById('tab-'+t);
+    if(e) e.style.display = t===id?'block':'none';
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  CSV EXPORT
+// ════════════════════════════════════════════════════════
+function exportCSV(){
+  const p = DB.getArr('participants');
+  if(!p.length){ showToast('No hay datos para exportar','er'); return; }
+  const rows=[['Ticket','Nombre','Cédula','Teléfono','Email','Departamento','Ciudad','Unidad','Sorteo','Fecha','Hora','Ganador'],
+    ...p.map(x=>[x.ticket,x.nombre,x.cedula,x.telefono,x.email,x.departamento,x.ciudad,x.vehicleId,x.sorteoName,x.fecha,x.hora,x.winner?'SÍ':'NO'])];
+  const csv=rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='participantes_rutawin_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('CSV exportado','ok');
+}
+
+// ════════════════════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.add('open') }
+function closeModal(id){ document.getElementById(id).classList.remove('open') }
+document.addEventListener('click',e=>{ if(e.target.classList.contains('modal-bg')) e.target.classList.remove('open') });
+
+// ════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type} show`;
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+document.querySelectorAll('.field input,.field select').forEach(f=>{
+  f.addEventListener('input',()=>f.classList.remove('err'));
+});
+validateQRAccess();
+initRegisterView();
+
+// ════════════════════════════════════════════════════════
+//  ODOO IFRAME FIX — re-append modals to body on open
+//  so they escape any stacking context from the host page
+// ════════════════════════════════════════════════════════
+(function(){
+  // Move all modals and toast to direct children of <body> so
+  // position:fixed works correctly inside Odoo's iframe layout
+  function hoistToBody(){
+    const els = document.querySelectorAll('.modal-bg, .toast, .sec-overlay');
+    els.forEach(el=>{
+      if(el.parentElement !== document.body){
+        document.body.appendChild(el);
+      }
+    });
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', hoistToBody);
+  } else {
+    hoistToBody();
+  }
+})();
+
+</script>
+</div><!-- #rw-root -->
+</body>
+</html>
